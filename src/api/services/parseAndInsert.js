@@ -8,6 +8,8 @@ const { on } = require('../data/db')
 
 const parseAndInsert = async (file) => {
 
+    // format text into actual numbers
+    // do I need this?
     const csvTypeTranformer = (row, next) => {
         return next(null, {
             quote_date: row.quote_date,
@@ -63,22 +65,19 @@ const parseAndInsert = async (file) => {
         const ping = (msg) => {
             console.log("ping" + msg)
         }
-          
-        const insertStream = client.query(from("COPY contracts FROM STDIN WITH (FORMAT csv)"))
-        const csvStream = csv.parse({headers:true})
-        const csvFormatStream = csv.format({headers:true})
-        const inputStream = fs.createReadStream(file.path)
-        const outputStream = fs.createWriteStream('output.csv')
+        const copyQuery = "COPY contracts (quote_date, expiration, strike, option_type, "
+            +"open, high, low, close, trade_volume, bid_size_1545, bid_1545, ask_size_1545, ask_1545, "
+            +"underlying_bid_1545, underlying_ask_1545, implied_underlying_price_1545, active_underlying_price_1545, "
+            +"implied_volatility_1545, delta_1545, gamma_1545, theta_1545, vega_1545, rho_1545, bid_size_eod, "
+            +"bid_eod, ask_size_eod, ask_eod, underlying_bid_eod, underlying_ask_eod, vwap, open_interest, delivery_code)"
+            +" FROM STDIN WITH (FORMAT csv)"
 
-        // inputStream.on('error', done)
-        // csvStream.on('error', done)
-        // csvFormatStream.on('error', done)
-        // insertStream.on('error', done)
-        // insertStream.on('finish', done)
-        // outputStream.on('end', done)
-        // outputStream.on('error', done)
+        const insertStream = client.query(from(copyQuery)) // insert inte database via pg-copy-streams
+        const csvStream = csv.parse({headers:true}) // parse csv into an object
+        const csvFormatStream = csv.format({headers:false}) // tweak and transform back into csv
+        const inputStream = fs.createReadStream(file.path) // read file from file system
+        //const outputStream = fs.createWriteStream('output.csv') // output to a csv file
 
-        //fileStream.pipe(csvStream).pipe(csvFormatStream).pipe(insertStream)
         inputStream
             .pipe(csvStream)
             .on('error', done)
@@ -89,7 +88,7 @@ const parseAndInsert = async (file) => {
             .transform(csvTypeTranformer)
             .on('error', done)
             .on('end', ping)
-            .pipe(outputStream)
+            .pipe(insertStream)
             .on('error', done)
             .on('data', (data) => console.log(data))
             .on('finish', done)
