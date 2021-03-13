@@ -1,10 +1,6 @@
 
 exports.up = function(knex) {
     return knex.schema
-        .createTable('rollers', table => {
-            table.increments('id').primary()
-            table.timestamps()
-        })
         .createTable('trades', table => {
             table.increments('id').primary()
             table.string('symbol').notNullable()
@@ -17,8 +13,7 @@ exports.up = function(knex) {
             table.decimal('open_price').notNullable()
             table.decimal('close_price')
             table.boolean('is_open').defaultTo(true).notNullable()
-            table.integer('roller_id').unsigned().notNullable()
-            table.foreign('roller_id').references('id').inTable('rollers')
+            table.integer('roll').unsigned()
         })
   
 };
@@ -26,5 +21,4 @@ exports.up = function(knex) {
 exports.down = function(knex) {
     return knex.schema
     .dropTable('trades')
-    .dropTable('rollers')
 };
